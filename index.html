@@ -151,7 +151,7 @@
         
         if (isHidden) renderNames();
         
-        // Prevent rapid fire toggle
+        // Prevent sticking
         keys['Escape'] = false;
         keys['1'] = false;
       }
@@ -174,21 +174,33 @@
       });
     }
 
-    // 4. Launcher (Direct URL to prevent "code showing" issue)
-    function launch(url) {
+    // 4. Launcher (Injects as a playable game using doc.write)
+    async function launch(url) {
+      // Handle the placeholder replacement
+      const finalUrl = url.replace('{HTML_URL}', 'https://cdn.jsdelivr.net/gh/comet-pixelated/html@main');
+      
       const win = window.open('about:blank', '_blank');
       if (!win) return alert("Allow popups to open archives.");
 
       const doc = win.document;
-      doc.title = "Educational Module";
       
-      const iframe = doc.createElement('iframe');
-      // Using URL directly from zones.json as per requirement
-      iframe.src = url; 
-      iframe.style = "position:fixed; top:0; left:0; width:100%; height:100%; border:none; background:#000;";
+      try {
+        // Fetching the text and writing it to document ensures it's treated as HTML, not source code
+        const response = await fetch(finalUrl);
+        const html = await response.text();
+        doc.open();
+        doc.write(html);
+        doc.close();
+      } catch (e) {
+        // Backup: Use Frame if Fetch fails
+        const iframe = doc.createElement('iframe');
+        iframe.src = finalUrl;
+        iframe.style = "position:fixed; top:0; left:0; width:100%; height:100%; border:none; background:#000;";
+        doc.body.style.margin = "0";
+        doc.body.appendChild(iframe);
+      }
       
-      doc.body.style.margin = "0";
-      doc.body.appendChild(iframe);
+      setTimeout(() => { doc.title = "Aero Library | Module"; }, 500);
     }
 
     // 5. JSON Save Importer
